@@ -1,33 +1,42 @@
 import logging
-import base64
 from homeassistant.components.camera import Camera
-from .const import DOMAIN, CAMERA_TOPIC
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    add_entities([Esp32Camera(hass)])
+async def async_setup_entry(hass, config_entry, async_add_entities: AddEntitiesCallback):
+    """Set up the ESP32 Camera from a config entry."""
+    unique_id = config_entry.data.get("unique_id", "default_unique_identifier")
+    name = "ESP32 Camera"
+
+    # Create a single camera entity
+    camera = Esp32Camera(hass, name, unique_id)
+        
+    async_add_entities([camera], True)
 
 class Esp32Camera(Camera):
-    def __init__(self, hass):
+    def __init__(self, hass, name, unique_id):
         super().__init__()
-        self._hass = hass
-        self._last_image = None
+        self.hass = hass
+        self._name = name
+        self._unique_id = f"esp32_camera_{unique_id}"
+        self._image = None
 
-        # Subscribe to MQTT topic
-        def message_received(msg):
-            _LOGGER.info("Image received from ESP32 camera")
-            try:
-                self._last_image = base64.b64decode(msg.payload)
-                self.schedule_update_ha_state()
-            except Exception as e:
-                _LOGGER.error("Error processing image: %s", e)
-
-        hass.components.mqtt.subscribe(CAMERA_TOPIC, message_received)
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return self._unique_id
 
     @property
     def name(self):
+        """Return the name of the camera."""
         return "ESP32 Camera"
 
-    def camera_image(self):
-        return self._last_image
+    def camera_image(self, width=None, height=None):
+        """Return the current camera image."""
+        return self.hass.data[DOMAIN].get("camera_image")
+
+    def update(self):
+        """Update camera image."""
+        # Image updating is handled via MQTT, no additional logic needed here

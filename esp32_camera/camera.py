@@ -1,3 +1,5 @@
+# camera.py
+
 import logging
 from homeassistant.components.camera import Camera
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -33,9 +35,10 @@ class Esp32Camera(Camera):
         """Return the name of the camera."""
         return "ESP32 Camera"
 
-    def camera_image(self, width=None, height=None):
-        """Return the current camera image."""
-        return self.hass.data[DOMAIN].get("camera_image")
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
+        """Return bytes of camera image."""
 
     def update(self):
         """Update camera image."""
